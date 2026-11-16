@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 4: Secure Media Upload and Storage Abstraction**
+  - Storage service interface (`StorageService`) with concrete `LocalStorageService` utilizing UUID naming to prevent path traversal.
+  - Magic byte signatures and MIME type verification for JPEG, PNG, WebP, MP4, MOV, and WebM (`apps/api/app/storage/validator.py`).
+  - Strict upload limits enforced: maximum file size (100MB), allowable extensions, and media integrity calculations (SHA-256).
+  - Secure media API endpoints: `POST /api/v1/media`, `GET /api/v1/media/{media_id}`, `GET /api/v1/media/{media_id}/file`, `DELETE /api/v1/media/{media_id}`.
+  - Ownership protection: only file owners or administrators can access or delete uploaded media assets.
+  - Automated tests in `apps/api/tests/test_media.py` verifying upload rejection of malicious binaries, valid upload processing, file streaming, and asset deletion.
 - **Phase 3: Authentication and Role-Based Access Control**
   - JWT Access & Refresh token architecture (`apps/api/app/core/jwt.py`) using HS256 HMAC encryption.
   - Endpoints: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout`.
