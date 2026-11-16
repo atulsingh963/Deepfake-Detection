@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     LOCAL_UPLOAD_DIR: str = "./data/uploads"
 
     # Superuser seed
-    FIRST_SUPERUSER_EMAIL: str = "admin@mino.local"
+    FIRST_SUPERUSER_EMAIL: str = "admin@mino.com"
     FIRST_SUPERUSER_PASSWORD: str = "AdminSecurePassword123!"
     FIRST_SUPERUSER_NAME: str = "System Administrator"
 

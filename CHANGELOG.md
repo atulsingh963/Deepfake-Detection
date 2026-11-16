@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 3: Authentication and Role-Based Access Control**
+  - JWT Access & Refresh token architecture (`apps/api/app/core/jwt.py`) using HS256 HMAC encryption.
+  - Endpoints: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout`.
+  - Profile endpoints: `GET /api/v1/users/me`, `PATCH /api/v1/users/me`, `DELETE /api/v1/users/me`.
+  - Admin user endpoints: `GET /api/v1/admin/users`, `PATCH /api/v1/admin/users/{user_id}/status`, `PATCH /api/v1/admin/users/{user_id}/role`.
+  - Role-based authorization dependencies (`get_current_user`, `require_admin`).
+  - React authentication interface with login/registration toggles, JWT local persistence, protected session header, and role-based views.
+  - Integration tests for auth and RBAC in `apps/api/tests/test_auth.py` passing with 100% success.
 - **Phase 2: Database, Migrations, and Core Architecture**
   - Complete SQLAlchemy 2.0 entities matching master specification: `users`, `media_assets`, `analysis_jobs`, `analysis_results`, `frame_results`, `model_versions`, `datasets`, `training_runs`, `audit_logs`.
   - Alembic migration environment initialized with automatic version generation and applied schema.
