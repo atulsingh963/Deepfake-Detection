@@ -1,0 +1,1859 @@
+MINO - DEEPFAKE DETECTION AND MEDIA FORENSICS PLATFORM
+COMPLETE IMPLEMENTATION MASTER PLAN
+
+Document version: 1.0
+Research checked: 16 November 2026
+Project name: MINO (working name based on the supplied project-paper filename; rename consistently if required)
+Deliverable type: End-to-end implementation specification and development checklist
+
+======================================================================
+0. HOW TO USE THIS FILE
+======================================================================
+
+Use this file as the single implementation brief for building MINO from an empty repository to a tested, deployable web application. Give the full file to the coding agent or development team at the beginning. Then implement the numbered phases in order. Do not try to implement every phase in one giant code change.
+
+This document combines three different kinds of information:
+
+A. SOURCE-PAPER REQUIREMENTS
+   Requirements directly represented in the uploaded paper, "Deepfake Detection: A Systematic Literature Review" (October 2024 issue). The paper reviews 112 studies published from 2018 through 2020. It classifies approaches into deep learning, classical machine learning, statistical, and blockchain-based methods. Its architecture and module descriptions specify a Service Provider/Admin and Remote User workflow.
+
+B. VERIFIED EXTERNAL RESEARCH
+   Findings from current research repositories, benchmark papers, dataset maintainers, security guidance, and the C2PA specification available on 16 November 2026. These are used to modernize the older paper.
+
+C. ENGINEERING RECOMMENDATIONS
+   Proposed architecture, features, implementation order, database design, API design, and acceptance criteria. These are a practical implementation plan, not claims that the supplied paper already implemented them.
+
+IMPORTANT PRODUCT LIMITATION
+MINO must not claim that it can prove a video is real or fake with certainty. It is a probabilistic forensic screening system. Its result must communicate uncertainty, model version, supported media type, and known limitations. A model score is not proof, and a high score is not a legal conclusion.
+
+======================================================================
+1. SOURCE PAPER ANALYSIS - WHAT MUST BE PRESERVED
+======================================================================
+
+1.1 Research foundation
+
+The supplied paper reviews 112 research articles from 2018 to 2020. Its four technique categories are:
+- Deep learning-based techniques.
+- Classical machine learning-based techniques.
+- Statistical techniques.
+- Blockchain-based techniques.
+
+The paper reports that deep-learning methods, especially CNN-oriented approaches in the reviewed literature, generally outperform non-deep-learning approaches. It also notes that results depend on the dataset, selected features, and how training and testing data are split. It warns that performance on unrelated datasets can fall substantially.
+
+This review period is historical. Do not present the paper's 2018-2020 survey as a complete account of 2026 research. Use it as the project's academic foundation, then use the modern research section in this brief for implementation decisions.
+
+1.2 Original architecture shown in the paper
+
+The system architecture diagram on PDF page 4 depicts:
+- A Web Server.
+- A Web Database used to store and retrieve information.
+- A Service Provider module.
+- A Remote User module.
+- Information and dataset-result exchange between the server, database, and service provider.
+- Remote-user registration/login, deepfake prediction, and profile viewing.
+
+1.3 Original Service Provider/Admin functions
+
+Preserve these functions in MINO:
+- Secure service-provider login.
+- Train and test datasets.
+- View video datasets used for training and testing.
+- View accuracy in bar charts.
+- View detailed training/testing accuracy results.
+- View prediction types.
+- View prediction ratios.
+- Download prediction-result datasets.
+- View prediction-ratio results.
+- View remote users.
+- View and authorize registered users.
+
+1.4 Original Remote User functions
+
+Preserve these functions in MINO:
+- Register before using protected operations.
+- Log in after registration and approval, if admin approval is enabled.
+- Submit media for deepfake prediction.
+- View prediction type/result.
+- View and update a profile.
+
+1.5 Original research and limitations to retain in the project report
+
+The paper discusses biological/physiological signals, facial landmarks, 3D head pose, visual artifacts, MLP/CNN methods, Meso-4 and MesoInception-4, GAN-related traces, and blockchain/IPFS/ENS concepts. Treat these as research directions, not as already implemented MINO features.
+
+The paper mentions an accuracy figure as high as 98% for some methods but also explains that performance depends on dataset and feature selection. Do not use 98% as MINO's advertised accuracy. MINO must publish its own reproducible evaluation results, including false-positive and cross-dataset performance.
+
+======================================================================
+2. PRODUCT VISION AND SCOPE
+======================================================================
+
+2.1 Product definition
+
+MINO is a web-based media-forensics platform that allows an authenticated user to submit an image or video, runs supported deepfake-detection models, and returns a transparent analysis report. An administrator manages users, datasets, model versions, training/evaluation runs, and system-wide analytics.
+
+2.2 Primary objective
+
+Build a practical, explainable, privacy-conscious deepfake screening platform with:
+- User registration, login, profile, and analysis history.
+- Secure image/video upload.
+- Background processing for time-consuming video analysis.
+- A model-inference pipeline that can be upgraded without rewriting the application.
+- Video-level and frame-level results.
+- An admin dashboard for dataset/model operations and analytics.
+- Reproducible model evaluation and documented limitations.
+
+2.3 Initial supported media
+
+MVP:
+- Images: JPG/JPEG, PNG, WEBP.
+- Videos: MP4, MOV, WEBM, subject to the installed FFmpeg/FFprobe build and codec support.
+- Face-manipulation detection is the first supported detection task.
+- General synthetic-image detection is a separately versioned task and must not be implied by a face-swap model.
+
+Later extensions:
+- Audio deepfake detection.
+- Audio-video synchronization and cross-modal consistency analysis.
+- C2PA Content Credentials validation.
+- Optional integrity anchoring for hashes.
+
+Do not claim that MVP supports every social-media format, every generated image, every audio format, or live-stream detection.
+
+2.4 User roles
+
+REMOTE USER
+- Register, verify email, sign in, sign out, reset password.
+- View and edit permitted profile details.
+- Upload supported images/videos.
+- View upload and analysis progress.
+- View a result, frame timeline, supported evidence, and model details.
+- View analysis history.
+- Download an analysis report.
+- Delete an uploaded asset and its analysis data, subject to documented retention/audit obligations.
+
+ADMIN / SERVICE PROVIDER
+- Secure admin login and role-based access.
+- Approve, suspend, reactivate, or remove users.
+- View user and service statistics.
+- Inspect dataset registrations and dataset versions.
+- Start/monitor training and evaluation jobs.
+- Compare model versions and evaluation metrics.
+- Activate, stage, rollback, or retire a model version.
+- Review analysis outcomes and system errors without exposing unnecessary user media.
+- Export aggregate prediction/evaluation data as CSV/JSON.
+- View audit logs and system health.
+
+OPTIONAL RESEARCHER ROLE (later)
+- Access approved research datasets and experiment reports.
+- Create training/evaluation runs without admin-level user-management access.
+- Cannot activate a production model unless explicitly granted permission.
+
+2.5 Key product screens
+
+Public:
+- Landing page explaining what MINO does and does not do.
+- How it works.
+- Research/limitations page.
+- Privacy and acceptable-use pages.
+- Login and registration.
+
+Remote user:
+- User dashboard.
+- New analysis/upload page.
+- Processing/status page.
+- Analysis result page.
+- Analysis history/list and filter page.
+- Profile and account settings.
+
+Admin:
+- Admin overview dashboard.
+- User management and approval queue.
+- Dataset registry.
+- Training jobs and logs.
+- Evaluation reports and metrics charts.
+- Model registry and active model selector.
+- Inference/analysis monitoring.
+- Audit log and system health page.
+
+======================================================================
+3. MODERN RESEARCH FINDINGS AND DESIGN CONSEQUENCES
+======================================================================
+
+3.1 Generalization is a core engineering requirement
+
+A detector can perform well on one dataset and fail on new sources, codecs, compression levels, identities, or manipulation types. Meta's DFDC page reports that leaderboard rankings changed significantly between the public set and the black-box set. DF40 (NeurIPS 2024) explicitly identifies forgery diversity, realism, and narrow evaluation protocols as reasons current detector results can fail to generalize.
+
+Design consequence:
+- Never rely on one random train/test split from one dataset.
+- Split by source video and, where possible, identity/subject to avoid leakage.
+- Evaluate on at least one dataset not used for training.
+- Record per-dataset and per-manipulation metrics.
+- Include compression, resizing, blur, noise, and frame-rate changes in robustness evaluation.
+- Display the model version and supported task in every user-facing result.
+
+3.2 DeepfakeBench as a benchmark reference
+
+The current DeepfakeBench-v2 repository advertises 36 detection methods: 28 image detectors and 8 video detectors. Its listed methods span naive CNNs, spatial approaches, frequency approaches, and video/temporal approaches. Examples include Xception, MesoNet, EfficientNet-B4, Face X-ray, F3Net, TALL, I3D, FTCN, X-CLIP, and VideoMAE. Its listed metrics include frame-level AUC, video-level AUC, accuracy, equal error rate, precision-recall, and average precision. The repository also references newer methods including LSDA and an ICML 2025 Spotlight method called Effort.
+
+Design consequence:
+- Use DeepfakeBench as a research/benchmark reference and a possible offline comparison environment.
+- Do not attempt to integrate all 36 detectors into the production web app at the beginning.
+- Start with one reproducible baseline model behind a detector interface.
+- Add another detector only when its license, weights, compute requirements, and validation results are understood.
+- Record all preprocessing settings so comparisons are fair.
+- Check the exact license of the repository, each model, each checkpoint, and each dataset before reusing them.
+
+3.3 Dataset selection
+
+Recommended dataset strategy:
+
+A. FaceForensics++ (FF++)
+- Useful foundational dataset containing original video sequences and manipulated versions made using several face manipulation approaches.
+- Access is controlled; the official repository asks users to complete an access form and receive download access.
+- Keep the dataset out of the source repository. Follow the official terms and access process.
+
+B. Celeb-DF
+- Useful for testing higher-quality celebrity face-swap examples.
+- The CVPR paper describes 5,639 high-quality DeepFake videos.
+- Review the official terms and access requirements before use.
+
+C. DFDC
+- Meta describes a preview set of about 5,000 videos and a full dataset of about 124,000 videos using multiple manipulation algorithms.
+- Full dataset access has AWS account/IAM prerequisites according to the official page.
+- Its public-versus-black-box results are a useful warning about overfitting to a benchmark.
+
+D. DeeperForensics-1.0
+- The project describes 48,475 source videos and 11,000 manipulated videos, with multiple real-world perturbations.
+- Its stated storage requirement is roughly 284 GB; plan storage before attempting to download it.
+- Access requires accepting the dataset terms and requesting access.
+
+E. WildDeepfake
+- Collected from web videos and intended to represent more in-the-wild conditions.
+- The maintainers describe restricted research use and an applicant verification process.
+- Do not assume public/commercial redistribution rights.
+
+F. DF40
+- NeurIPS 2024 benchmark with 40 distinct deepfake techniques.
+- Especially relevant for testing a detector against a wider range of newer methods rather than only older face swaps.
+- Verify current access terms, storage needs, and suitability before downloading.
+
+Dataset rules:
+- Read and record each dataset's licence/terms before use.
+- Keep a `DATASET_MANIFEST.csv` with source, version, access date, terms URL, labels, split, and checksum where permitted.
+- Do not push datasets, face crops, videos, credentials, or private data to GitHub.
+- Never mix frames of the same source video or subject across train and test splits in a way that leaks identity/source information.
+- Keep a small synthetic test fixture only if its licence and consent permit repository use.
+- For tests, generate tiny synthetic media fixtures or use mocks; do not commit research datasets.
+
+3.4 Recommended model strategy
+
+MVP baseline:
+- A face-focused binary image classifier using a maintainable pretrained CNN backbone such as EfficientNet-B0 or Xception, fine-tuned on approved face-manipulation data.
+- For a lightweight first deployment, benchmark EfficientNet-B0 or another smaller backbone on CPU. Use Xception as a research baseline if the implementation/weights and compute are appropriate.
+- Keep model loading, preprocessing, inference, and post-processing behind a common interface, so models can be exchanged later.
+
+Video MVP:
+- Decode the video safely with FFmpeg/FFprobe.
+- Sample a configurable number of frames at evenly distributed timestamps (for example, 16 frames for a first pass; make this configurable).
+- Detect and crop face regions from the sampled frames.
+- Run the frame detector on valid face crops.
+- Aggregate frame scores using an aggregation method selected on validation data (compare mean, median, and top-k mean; do not assume one is universally best).
+- Return a video-level result plus a timestamped frame-risk timeline.
+
+Later research models:
+- Temporal/video detectors such as FTCN, TALL, I3D, X-CLIP, or VideoMAE.
+- Frequency-aware methods such as F3Net or SPSL.
+- Generalization-oriented methods such as LSDA and other methods currently benchmarked by DeepfakeBench.
+- These are research candidates, not guaranteed drop-in upgrades. Reproduce their preprocessing and evaluate independently.
+
+Audio and multimodal (future phase):
+- Add a separate audio spoof/deepfake detector with its own datasets, labels, metrics, and model version.
+- Add an audio-video consistency model only after both branches have been independently evaluated.
+- Never infer audio authenticity from a video-only classifier.
+- If audio is not enabled, clearly label it "not analyzed".
+
+3.5 Calibration and user-facing classes
+
+Store a continuous estimated manipulation score from 0.0 to 1.0. Calibrate the score on a held-out validation set where practical. Define thresholds from validation data and version the thresholds with the model.
+
+Recommended UI labels:
+- LIKELY MANIPULATED: score is above the validated high threshold.
+- INCONCLUSIVE: score lies in the uncertain band, no usable face was found, the media quality is insufficient, or the media is outside the supported domain.
+- LIKELY AUTHENTIC: score is below the validated low threshold.
+
+The interface must say "model-estimated manipulation likelihood" and must not say "verified real" or "100% fake". A heatmap/attention map is a model visualization, not proof of the exact manipulated pixels.
+
+3.6 Evaluation metrics
+
+Minimum model report:
+- ROC-AUC.
+- PR-AUC / Average Precision.
+- Precision, recall, F1.
+- Balanced accuracy.
+- Confusion matrix.
+- False-positive rate and false-negative rate.
+- Equal Error Rate (EER), where appropriate.
+- Frame-level AUC and video-level AUC.
+- Per-dataset and per-manipulation metrics.
+- Calibration metrics (for example, Brier score or ECE) when score calibration is implemented.
+- Inference latency, memory consumption, and supported input range.
+
+A single accuracy percentage is not enough. Always show the test dataset, split strategy, sample count, date, model version, and threshold used.
+
+3.7 C2PA provenance is separate from detection
+
+The C2PA 2.5 specification (October 2026) defines cryptographically verifiable provenance information, including signed assertions and asset bindings. It can help validate whether provenance claims are associated with an asset and have not been tampered with. C2PA explicitly does not make a value judgement that the provenance is "good" or "bad" and does not establish whether the depicted content is factually true.
+
+Design consequence:
+- Add a separate optional provenance panel: "C2PA credentials found / not found / invalid / unsupported".
+- Do not treat missing C2PA metadata as evidence that a file is fake.
+- Do not treat valid C2PA metadata as proof that the content is truthful or unmanipulated.
+- Keep provenance validation separate from the ML manipulation score.
+
+3.8 Blockchain/IPFS decision
+
+The supplied paper discusses blockchain, IPFS, and Ethereum Name Service concepts. Preserve the idea only as an optional integrity/provenance extension:
+- Always calculate a SHA-256 hash for each uploaded asset.
+- Store the hash, timestamp, uploader reference, and model/report hash in the database audit trail.
+- A later extension may anchor hashes or signed report references to a permissioned ledger or test network.
+- Never store raw private videos, face crops, passwords, or personal data on a public blockchain.
+- Do not use blockchain as a deepfake classifier; a blockchain can preserve a record or prove that bytes match a hash, not determine whether the depicted event is real.
+- IPFS is not automatically private. Use private object storage for user uploads unless a deliberate access-controlled architecture is designed.
+
+======================================================================
+4. COMPLETE FEATURE REQUIREMENTS
+======================================================================
+
+4.1 Authentication and account management
+- Email/password registration.
+- Email verification.
+- Secure password hashing (Argon2id or a maintained equivalent).
+- Login/logout.
+- Short-lived access tokens and rotating refresh tokens, or secure server sessions.
+- Password reset flow using single-use expiring tokens.
+- Role-based access control (RBAC).
+- Optional admin approval workflow matching the paper.
+- Account status: pending, active, suspended, deleted.
+- Profile display/edit.
+- Account deletion request.
+- Login rate limiting and audit events.
+
+4.2 Media ingestion
+- Drag-and-drop upload and file picker.
+- Upload progress and clear error messages.
+- Allowlisted image/video formats only.
+- Configurable maximum file size and video duration.
+- Validate file extension, MIME type, and file signature; do not trust browser-supplied MIME type alone.
+- Generate server-side UUID filenames; never use a client filename as a storage path.
+- Calculate SHA-256 hash.
+- Read media metadata safely.
+- Store media privately outside the web root.
+- Provide explicit consent/notice before analysis.
+- Delete original files according to the retention policy.
+
+4.3 Image analysis
+- Validate image dimensions, encoding, and size.
+- Detect whether an appropriate face region exists for the selected model.
+- Run the face-focused classifier.
+- Return score, class, model version, processing time, and quality/coverage status.
+- Show a visual explanation only if that method is implemented and documented.
+- Do not claim a face-swap model detects all AI-generated or edited images.
+
+4.4 Video analysis
+- Validate container and codecs using a safe FFprobe call.
+- Reject or mark unsupported videos cleanly.
+- Enforce duration, resolution, file size, frame-count, and timeout limits.
+- Extract sampled frames with FFmpeg.
+- Detect face regions without identifying the person.
+- Run frame-level inference.
+- Aggregate frame scores to a video-level estimate.
+- Store timestamped frame scores.
+- Show a timeline with high-risk timestamps.
+- Show number of sampled frames and number of valid face frames.
+- Provide a low-quality/insufficient-evidence state.
+- Clean temporary frame files after processing.
+
+4.5 Analysis result and report
+- Clear result label and estimated manipulation score.
+- Explanation that the score is probabilistic.
+- Model name, model version, model task, threshold version, and analysis timestamp.
+- Frame timeline and selected suspicious timestamps.
+- Uploaded media summary (type, dimensions, duration, size).
+- Optional C2PA status in a separate section.
+- SHA-256 file hash.
+- Downloadable PDF report (later phase) and JSON result export.
+- Report includes limitations and evaluation provenance, not only a percentage.
+
+4.6 User dashboard and history
+- Total analyses.
+- Recent analyses and statuses.
+- Search/filter by date, file type, and result class.
+- Open previous result.
+- Delete an analysis and associated media.
+- Pagination; do not load the entire history at once.
+
+4.7 Admin dashboard
+- Total users, active users, pending approvals.
+- Total media analyses, completed/failed/queued jobs.
+- Breakdown by prediction class.
+- Daily/weekly analysis volume.
+- Average inference duration and failure rate.
+- Charts with clearly labelled date range and sample counts.
+- Dataset registry and dataset usage summary.
+- Training/evaluation run summary.
+- Model version comparison.
+- User approval/suspension.
+- CSV/JSON export of aggregate results.
+- Audit log and health status.
+
+4.8 Dataset management
+- Register dataset metadata; do not upload large datasets through normal user upload endpoints.
+- Track dataset name, source URL, version, licence/terms, labels, checksums, access date, and permitted use.
+- Track preprocessing version and split manifest.
+- Store dataset files on a research storage volume or approved object store.
+- Admin-only operations for dataset validation and indexing.
+
+4.9 Model registry and training management
+- Track architecture and model version.
+- Track checkpoint location and SHA-256 checksum.
+- Track training dataset versions and split IDs.
+- Track hyperparameters, preprocessing, code commit SHA, random seed, training date, and hardware.
+- Track metrics and evaluation report location.
+- Model states: draft, training, evaluated, staged, active, retired, failed.
+- Require evaluation approval before activating a production model.
+- Support rollback to a known model version.
+- Keep production inference pinned to a model version for each analysis.
+
+4.10 Privacy, safety, and governance
+- Private media by default.
+- Only the owner and explicitly authorized staff can access media.
+- Retention settings and deletion workflow.
+- Consent and acceptable-use policy.
+- No face recognition or identity lookup in the MVP.
+- No public gallery of uploaded videos.
+- Do not expose face crops or original URLs in public logs.
+- Redact personal data from logs.
+- Provide an abuse reporting/contact path.
+- Provide result disclaimers and a means to report a potentially incorrect result.
+
+======================================================================
+5. RECOMMENDED TECHNOLOGY STACK
+======================================================================
+
+Use one primary language per service where practical. The following stack keeps the AI pipeline in Python and the web UI in TypeScript.
+
+FRONTEND
+- React + TypeScript.
+- Vite for development/build.
+- Tailwind CSS for styling.
+- React Router for navigation.
+- TanStack Query for API/server-state management.
+- React Hook Form + Zod for forms/validation.
+- Recharts for admin analytics.
+- Lucide React for icons.
+- Playwright for end-to-end tests.
+
+BACKEND API
+- Python 3.12 or another Python version supported by the selected PyTorch/ONNX stack at implementation time.
+- FastAPI.
+- Pydantic for schemas/settings.
+- SQLAlchemy 2.x for database access.
+- Alembic for migrations.
+- PostgreSQL for relational data.
+- Redis for queues/cache/rate-limit coordination.
+- RQ or Celery for background jobs. Select one; do not introduce both without a real need.
+- Pytest for automated tests.
+
+AI / MEDIA PIPELINE
+- PyTorch for training and research.
+- torchvision and/or timm for model backbones.
+- OpenCV for image/frame operations.
+- FFmpeg + FFprobe for media decoding and metadata.
+- A maintained face detector such as MediaPipe or a properly licensed RetinaFace implementation.
+- NumPy and scikit-learn for metrics/calibration.
+- ONNX Runtime for CPU inference if export produces equivalent predictions and meets benchmarks.
+- Grad-CAM or another documented explanation method only if technically valid for the selected model.
+
+STORAGE / INFRASTRUCTURE
+- Local filesystem for development only.
+- S3-compatible private object storage for deployed media and model artifacts.
+- PostgreSQL for relational metadata.
+- Redis for job queue.
+- Docker and Docker Compose for reproducible local services.
+- GitHub Actions for CI.
+- Vercel or equivalent static frontend hosting if suitable.
+- A backend host that supports persistent services/background workers. A separate GPU host may be required for heavier models.
+
+IMPORTANT COST NOTE
+Free cloud tiers, storage quotas, sleeping behavior, GPU access, bandwidth, and worker availability change frequently. Design the app so it can run locally with Docker first. For production, verify current limits and data-retention terms for every selected provider. Do not promise that long video inference, persistent files, a Redis queue, and a GPU worker can all run indefinitely on free tiers.
+
+======================================================================
+6. HIGH-LEVEL SYSTEM ARCHITECTURE
+======================================================================
+
+Browser (React)
+    |
+    | HTTPS / REST API
+    v
+FastAPI API service
+    |-- Authentication + RBAC
+    |-- User/Profile module
+    |-- Upload validation module
+    |-- Analysis/job module
+    |-- Admin/dataset/model module
+    |-- Report/provenance module
+    |
+    |-- PostgreSQL: users, jobs, results, datasets, models, audit
+    |-- Private object storage: uploaded media, reports, model artifacts
+    |-- Redis: background queue and job coordination
+                    |
+                    v
+              Worker service
+                    |
+                    |-- Safe media inspection (FFprobe)
+                    |-- Frame extraction (FFmpeg)
+                    |-- Face detection/cropping
+                    |-- Model inference (PyTorch/ONNX)
+                    |-- Video-level aggregation
+                    |-- Result/report persistence
+                    |-- Temporary-file cleanup
+                    v
+               PostgreSQL + object storage
+
+Admin training/evaluation path:
+Admin UI -> FastAPI -> training/evaluation job -> ML training pipeline -> metrics/report -> model registry -> admin approval -> active model version.
+
+Do not run long model training inside a normal HTTP request. Do not run long video inference synchronously in the web request process. The API should create a job and return a job ID; the worker processes it asynchronously.
+
+======================================================================
+7. REPOSITORY STRUCTURE
+======================================================================
+
+Use a monorepo to keep API, worker, web UI, and ML code versioned together.
+
+MINO/
+|-- README.md
+|-- CHANGELOG.md
+|-- LICENSE                         # Choose only after checking model/dataset/code licenses
+|-- CONTRIBUTING.md
+|-- .gitignore
+|-- .editorconfig
+|-- .env.example
+|-- docker-compose.yml
+|-- Makefile                        # Optional convenience commands
+|-- docs/
+|   |-- PROJECT_SCOPE.md
+|   |-- ARCHITECTURE.md
+|   |-- API.md
+|   |-- DATABASE.md
+|   |-- ML_PIPELINE.md
+|   |-- MODEL_CARD_TEMPLATE.md
+|   |-- DATASET_POLICY.md
+|   |-- SECURITY.md
+|   |-- PRIVACY_AND_RETENTION.md
+|   |-- DEPLOYMENT.md
+|   |-- TEST_PLAN.md
+|   |-- research/
+|       |-- REFERENCES.md
+|       |-- EXPERIMENT_LOG.md
+|-- apps/
+|   |-- web/
+|   |   |-- src/
+|   |   |   |-- app/
+|   |   |   |-- components/
+|   |   |   |-- features/
+|   |   |   |   |-- auth/
+|   |   |   |   |-- dashboard/
+|   |   |   |   |-- upload/
+|   |   |   |   |-- analysis/
+|   |   |   |   |-- history/
+|   |   |   |   |-- profile/
+|   |   |   |   |-- admin/
+|   |   |   |   |-- datasets/
+|   |   |   |   |-- models/
+|   |   |-- tests/
+|   |   |-- package.json
+|   |   |-- vite.config.ts
+|   |-- api/
+|       |-- app/
+|       |   |-- main.py
+|       |   |-- core/               # Settings, security, logging
+|       |   |-- api/v1/             # Route definitions
+|       |   |-- models/             # SQLAlchemy models
+|       |   |-- schemas/            # Pydantic schemas
+|       |   |-- services/           # Business logic
+|       |   |-- repositories/       # Database access
+|       |   |-- storage/            # Local/S3 abstraction
+|       |   |-- tasks/              # Queue task definitions
+|       |   |-- middleware/
+|       |-- migrations/
+|       |-- tests/
+|       |-- pyproject.toml
+|-- services/
+|   |-- worker/
+|       |-- worker.py
+|       |-- jobs/
+|       |-- tests/
+|-- ml/
+|   |-- configs/
+|   |-- data/
+|   |   |-- manifests/              # Metadata only; no raw datasets in Git
+|   |   |-- processed/              # Ignored by Git
+|   |-- src/mino_ml/
+|   |   |-- data/
+|   |   |-- preprocessing/
+|   |   |-- face_detection/
+|   |   |-- models/
+|   |   |-- inference/
+|   |   |-- training/
+|   |   |-- evaluation/
+|   |   |-- calibration/
+|   |   |-- export/
+|   |-- checkpoints/                # Ignored by Git; private artifact storage
+|   |-- reports/                    # Generated reports; decide what is safe to publish
+|   |-- scripts/
+|   |-- tests/
+|-- infra/
+|   |-- docker/
+|   |-- deployment/
+|   |-- monitoring/
+|-- scripts/
+|   |-- dev_setup.ps1
+|   |-- dev_setup.sh
+|   |-- lint.ps1
+|   |-- test.ps1
+|   |-- verify_env.py
+|-- .github/
+    |-- workflows/
+        |-- ci.yml
+        |-- security.yml
+
+Keep the structure understandable. Do not create empty placeholder packages for every possible future feature. Add folders when the phase actually needs them.
+
+======================================================================
+8. DATABASE DESIGN
+======================================================================
+
+Use PostgreSQL UUID primary keys, UTC timestamps, foreign keys, indexes, migrations, and explicit status enums. Store large media files and model checkpoints in private object storage, not as database blobs.
+
+8.1 users
+- id (UUID, primary key)
+- email (unique, normalized)
+- password_hash
+- full_name
+- role (USER, ADMIN, optional RESEARCHER)
+- status (PENDING, ACTIVE, SUSPENDED, DELETED)
+- email_verified_at
+- created_at, updated_at, last_login_at
+
+8.2 media_assets
+- id
+- owner_user_id
+- storage_key (private storage object key)
+- original_filename (display value only; never used as path)
+- detected_mime_type
+- media_type (IMAGE, VIDEO, AUDIO_FUTURE)
+- file_size_bytes
+- sha256
+- width, height, duration_seconds, codec, frame_rate (nullable as appropriate)
+- retention_expires_at
+- created_at, deleted_at
+
+8.3 analysis_jobs
+- id
+- owner_user_id
+- media_asset_id
+- status (QUEUED, PROCESSING, COMPLETED, FAILED, CANCELLED)
+- progress_percent
+- model_version_id
+- task_type (FACE_DEEPFAKE_IMAGE, FACE_DEEPFAKE_VIDEO, later task types)
+- error_code (safe machine-readable code)
+- error_message (sanitized)
+- queued_at, started_at, completed_at
+
+8.4 analysis_results
+- id
+- analysis_job_id (unique or one-to-one as appropriate)
+- predicted_class (LIKELY_MANIPULATED, INCONCLUSIVE, LIKELY_AUTHENTIC)
+- manipulation_score (0..1)
+- threshold_low, threshold_high
+- aggregation_method
+- valid_frame_count
+- face_frame_count
+- model_version_id
+- calibration_version
+- result_summary
+- created_at
+
+8.5 frame_results
+- id
+- analysis_result_id
+- timestamp_ms
+- frame_index
+- manipulation_score
+- face_detected
+- quality_status
+- optional explanation_artifact_key
+
+8.6 model_versions
+- id
+- name
+- version
+- task_type
+- architecture
+- checkpoint_storage_key
+- checkpoint_sha256
+- preprocessing_version
+- threshold_config_json
+- status (DRAFT, TRAINING, EVALUATED, STAGED, ACTIVE, RETIRED, FAILED)
+- evaluation_summary_json
+- created_at, activated_at, retired_at
+
+8.7 datasets
+- id
+- name
+- version
+- source_url
+- license_or_terms_url
+- permitted_use
+- checksum_manifest
+- sample_counts_json
+- preprocessing_version
+- status
+- created_at
+
+8.8 training_runs
+- id
+- model_version_id
+- dataset_ids or dataset-manifest references
+- code_commit_sha
+- configuration_json
+- random_seed
+- started_at, completed_at
+- status
+- logs_storage_key
+- metrics_storage_key
+
+8.9 audit_logs
+- id
+- actor_user_id (nullable for system events)
+- action
+- target_type
+- target_id
+- metadata_json (redacted)
+- ip_hash or minimized security metadata, according to privacy policy
+- created_at
+
+8.10 Optional refresh_sessions
+- id, user_id, token_hash, expires_at, revoked_at, created_at
+
+Database rules:
+- Add an index on owner_user_id and created_at for analysis history.
+- Add an index on job status and queued_at for worker polling/monitoring.
+- Enforce owner access in the service layer and, if appropriate, database row-level policies.
+- Do not store plaintext passwords, refresh tokens, secrets, or raw uploaded media in PostgreSQL.
+- Use Alembic migrations; never change production tables manually without a migration.
+
+======================================================================
+9. MACHINE-LEARNING IMPLEMENTATION SPECIFICATION
+======================================================================
+
+9.1 Dataset manifest format
+
+Use CSV or Parquet with at least:
+- sample_id
+- media_path (local research path or object key)
+- label (REAL=0, FAKE=1)
+- dataset_name
+- dataset_version
+- manipulation_type
+- source_video_id
+- subject_id / identity_id where permitted
+- split (TRAIN, VALIDATION, TEST, CROSS_DATASET_TEST)
+- license/permission reference
+- checksum
+
+The manifest should be the reproducibility contract. Never infer labels from filenames alone without validating them against the dataset's authoritative labels.
+
+9.2 Splitting policy
+
+- Split at source-video level.
+- Keep all frames/crops from a video in one split.
+- Where possible, keep subjects/identities disjoint between train and test.
+- Keep a validation set for threshold selection and calibration.
+- Keep a final untouched test set.
+- Add cross-dataset evaluation: train on selected datasets and test on a dataset/manipulation family not used for training.
+- Record the exact split manifest and checksum for each experiment.
+
+9.3 Preprocessing pipeline
+
+Image:
+1. Read the file with a safe image decoder.
+2. Normalize EXIF orientation.
+3. Validate dimensions and color channels.
+4. Detect face regions for the face-focused model.
+5. Crop/align faces using documented coordinates and interpolation.
+6. Resize and normalize exactly as required by the checkpoint.
+7. Preserve enough metadata to reproduce the transform.
+
+Video:
+1. Inspect container, stream, duration, dimensions, frame rate, and codec using FFprobe.
+2. Enforce duration, resolution, size, and processing time limits.
+3. Sample frames at fixed/evenly distributed timestamps or a documented sampling method.
+4. Detect face boxes on sampled frames.
+5. Optionally track faces across frames; do not perform identity recognition.
+6. Crop/align valid faces and apply the exact training transform.
+7. Run frame inference.
+8. Aggregate only valid frame outputs.
+9. Store timestamped scores and summary statistics.
+10. Delete temporary files even if the job fails.
+
+9.4 Augmentation policy
+
+Use realistic augmentations and document their probabilities:
+- JPEG/video compression and re-encoding.
+- Resize and downsample/upsample.
+- Mild blur and sharpening.
+- Brightness, contrast, saturation, and color shifts.
+- Sensor/compression noise.
+- Cropping and partial occlusion.
+- Frame-rate changes and frame dropping for video.
+
+Do not use augmentations that destroy the forensic signal or create label leakage. Compare experiments with a fixed validation protocol.
+
+9.5 Baseline training
+
+- Implement one baseline classifier first.
+- Use pretrained image weights where licence permits.
+- Replace the classification head with two classes.
+- Use class weighting or a sampler if class imbalance is present.
+- Record optimizer, learning rate, batch size, epochs, scheduler, seed, image size, augmentations, dataset versions, and checkpoint hash.
+- Save best checkpoint based on a validation metric selected before training (for example, validation AUC), not test performance.
+- Save training curves and a complete configuration file.
+- Never select the production threshold by looking at the final test set.
+
+9.6 Video-level aggregation
+
+Compare at least:
+- Mean frame probability.
+- Median frame probability.
+- Top-k mean of the highest-risk valid frames.
+
+Choose the aggregation policy using validation data and evaluate it on a separate test set. Store the aggregation name/version with every result. If a temporal model is implemented later, compare it against the frame-aggregation baseline.
+
+9.7 Training/evaluation deliverables
+
+Every training run must produce:
+- Config file.
+- Dataset/split manifest reference.
+- Code commit SHA.
+- Training log.
+- Validation curves.
+- Confusion matrix.
+- ROC and precision-recall curves.
+- Per-dataset/per-manipulation table.
+- Frame-level and video-level metrics.
+- Calibration/threshold report.
+- Checkpoint and SHA-256 checksum.
+- Model card describing intended use, non-intended use, known limitations, data, and evaluation.
+
+9.8 Model serving
+
+- Define a `Detector` interface with `load()`, `predict_image()`, `predict_video_frames()` or equivalent, `metadata()`, and `health_check()`.
+- Load the active model once per worker process; do not reload weights per frame/request.
+- Keep inference deterministic where possible.
+- Support CPU execution as the default development path.
+- Benchmark PyTorch inference against ONNX Runtime if exporting to ONNX.
+- If using quantization, compare quality metrics before/after and document the trade-off.
+- Use bounded worker concurrency to protect CPU/RAM.
+- Record latency and memory usage.
+
+======================================================================
+10. API CONTRACT - VERSIONED REST API
+======================================================================
+
+Prefix all routes with `/api/v1`. Use JSON responses, consistent error objects, request IDs, pagination, and OpenAPI documentation.
+
+10.1 Authentication
+- POST /auth/register
+- POST /auth/verify-email
+- POST /auth/login
+- POST /auth/refresh
+- POST /auth/logout
+- POST /auth/password/forgot
+- POST /auth/password/reset
+- GET  /auth/me
+
+10.2 Profile
+- GET   /users/me
+- PATCH /users/me
+- DELETE /users/me (soft-delete/request deletion according to policy)
+
+10.3 Media and analysis
+- POST   /media (upload and create asset)
+- GET    /media/{media_id}
+- DELETE /media/{media_id}
+- POST   /analyses (create a queued analysis for an owned media asset)
+- GET    /analyses
+- GET    /analyses/{analysis_id}
+- GET    /analyses/{analysis_id}/frames
+- GET    /analyses/{analysis_id}/report
+- DELETE /analyses/{analysis_id}
+
+10.4 Jobs
+- GET /jobs/{job_id}
+- POST /jobs/{job_id}/cancel (only if safe and supported)
+
+10.5 Admin - users
+- GET   /admin/users
+- GET   /admin/users/{user_id}
+- PATCH /admin/users/{user_id}/status
+- PATCH /admin/users/{user_id}/role (strictly restricted)
+
+10.6 Admin - datasets and model operations
+- GET  /admin/datasets
+- POST /admin/datasets
+- GET  /admin/datasets/{dataset_id}
+- POST /admin/training-runs
+- GET  /admin/training-runs
+- GET  /admin/training-runs/{run_id}
+- POST /admin/evaluations
+- GET  /admin/model-versions
+- POST /admin/model-versions/{model_id}/stage
+- POST /admin/model-versions/{model_id}/activate
+- POST /admin/model-versions/{model_id}/rollback
+
+10.7 Admin - analytics and exports
+- GET /admin/dashboard/summary
+- GET /admin/dashboard/predictions
+- GET /admin/dashboard/performance
+- GET /admin/audit-logs
+- GET /admin/exports/analyses.csv
+- GET /admin/exports/evaluations.csv
+
+API rules:
+- The client must never choose an arbitrary filesystem path or model checkpoint path.
+- Do not expose raw internal exception messages or stack traces.
+- Return 202 Accepted and a job identifier when starting asynchronous work.
+- Use 401 for unauthenticated, 403 for unauthorized, 404 for missing/not-owned resources, 413 for file too large, 415 for unsupported media, 422 for invalid input, and safe 5xx errors for internal failures.
+- Enforce object ownership on every media/analysis/report route.
+- Add pagination and maximum page sizes to list endpoints.
+
+======================================================================
+11. FRONTEND UX AND DESIGN REQUIREMENTS
+======================================================================
+
+11.1 Visual direction
+
+Create a clean, professional forensic dashboard. Use a dark-first interface if desired, but keep contrast, readable typography, keyboard focus, and responsive layouts. Do not make the result look like a sensational "AI lie detector". Use restrained risk indicators and clear explanations.
+
+11.2 Upload experience
+- Show supported types, size/duration limits, and privacy notice before upload.
+- Allow drag/drop and browse.
+- Show filename, file size, media type, upload progress, and cancel option where safe.
+- Explain when a file is unsupported or contains no usable face.
+- After upload, show the queued analysis status.
+
+11.3 Processing state
+- States: Uploading, Queued, Inspecting, Extracting frames, Detecting faces, Running model, Aggregating, Completed, Failed.
+- Progress must come from actual worker/job updates; never fake a 0-100% animation.
+- Support page refresh and reconnecting to an existing job.
+
+11.4 Results page
+- Main label: Likely Manipulated / Inconclusive / Likely Authentic.
+- Display "Estimated manipulation score" and a tooltip/disclaimer explaining it is a model score.
+- Display model version, analysis time, media metadata, number of sampled/valid frames.
+- Show a clickable timeline of frame scores.
+- Show a frame only when user is authorized and retention policy allows it.
+- Label attention maps as visual model explanations, not proof.
+- Show C2PA status in a separate provenance section.
+- Provide report download and delete action.
+
+11.5 Admin charts
+- Dataset/model filters.
+- Date-range selection.
+- Clear numerator/sample count and metric definitions.
+- Show confidence intervals if computed correctly.
+- Allow export of chart source data.
+- Avoid misleading pie charts for metrics that require a threshold or class denominator.
+
+11.6 Accessibility
+- Keyboard navigation.
+- Visible focus indicators.
+- Accessible form labels and errors.
+- Color is never the only way a risk state is communicated.
+- Responsive mobile and desktop layouts.
+- Respect reduced-motion preference.
+
+======================================================================
+12. SECURITY, PRIVACY, AND RELIABILITY
+======================================================================
+
+12.1 File-upload protection
+
+Follow defense-in-depth principles from the OWASP File Upload Cheat Sheet:
+- Allowlist only required file extensions.
+- Normalize/validate filenames and generate random server-side storage names.
+- Do not trust the browser's Content-Type header.
+- Check MIME type and file signature together; neither alone is sufficient.
+- Enforce file-size, duration, resolution, frame-count, and decompression limits.
+- Store uploads outside the web root/private object storage.
+- Require authentication and ownership checks.
+- Do not make uploaded media public by default.
+- Scan/parse in a worker with process and time limits.
+
+12.2 FFmpeg/FFprobe safety
+- Invoke binaries with argument arrays, not shell string concatenation.
+- Never interpolate user filenames into a shell command.
+- Use a generated temporary directory per job.
+- Set execution timeout, CPU/memory limits, and output limits.
+- Use a patched FFmpeg build.
+- Restrict protocols and network access where possible.
+- Reject path traversal and unexpected file references.
+- Clean up temporary data in a `finally`/job-cleanup path.
+
+12.3 Authentication and authorization
+- Hash passwords with Argon2id or a maintained secure password hashing implementation.
+- Use secure, HttpOnly, SameSite cookies if using cookie-based refresh sessions.
+- Protect state-changing requests from CSRF when cookie-based authentication is used.
+- Enforce role and owner checks on the backend; frontend route guards are not security.
+- Rate-limit login, password reset, registration, and upload/analysis creation.
+- Use email verification and secure reset tokens.
+- Audit admin actions.
+
+12.4 Secrets and deployment
+- Keep secrets in environment variables or a secrets manager.
+- Commit `.env.example`, never real `.env` files.
+- Rotate exposed credentials immediately.
+- Use HTTPS in deployment.
+- Restrict CORS to known frontend origins.
+- Restrict database and Redis network access.
+- Keep dependencies pinned/locked and scan for vulnerabilities.
+
+12.5 Privacy
+- Explain why the media is processed and how long it is retained.
+- Use private object storage and short-lived signed URLs.
+- Minimize logs; do not log file contents, raw face crops, tokens, or personal data.
+- Give users a deletion flow.
+- Specify backup deletion limitations honestly.
+- Define an admin access policy and audit staff access.
+- Do not perform face identification or match users to external identities.
+
+12.6 Reliability and observability
+- Structured JSON logs with request/job IDs.
+- Worker heartbeat and queue depth monitoring.
+- Health endpoints: `/health/live` and `/health/ready`.
+- Distinguish liveness from readiness (database/model/storage dependencies).
+- Retry only transient failures and use bounded retries.
+- Make job processing idempotent where possible.
+- Keep a dead-letter/failed-job review path.
+- Track inference latency, worker memory, queue wait, and processing failures.
+
+======================================================================
+13. IMPLEMENTATION PHASES - BUILD FROM ZERO TO LIVE
+======================================================================
+
+RULE FOR EVERY PHASE
+1. Implement only the phase scope.
+2. Run formatter, linter, type checks, and relevant tests.
+3. Verify the feature manually.
+4. Update README.md, CHANGELOG.md, and the relevant docs.
+5. Update the checklist in README.md (mark only verified work complete).
+6. Make one logical Git commit using the exact style shown below.
+7. Do not move forward with broken tests or an undocumented breaking change.
+
+PHASE 0 - PROJECT INITIALIZATION
+Tasks:
+- Create the MINO repository.
+- Initialize Git and the monorepo structure.
+- Add `.gitignore`, `.editorconfig`, `.env.example`, `README.md`, `CHANGELOG.md`, and `CONTRIBUTING.md`.
+- Ignore `.env`, virtual environments, node_modules, datasets, uploads, checkpoints, generated frames, logs, caches, and build outputs.
+- Add a clear project scope and initial architecture diagram in docs.
+- Add license only after checking all dependencies and model/dataset rights; code license does not override third-party dataset/model terms.
+Tests/verification:
+- `git status` contains no secrets or large dataset files.
+- New clone can follow the documented setup prerequisites.
+README update:
+- Project overview, goals, non-goals, stack, status, setup prerequisites, and roadmap.
+Commit:
+`chore: initialize MINO monorepo and project documentation`
+
+PHASE 1 - DEVELOPMENT ENVIRONMENT AND CONTAINERS
+Tasks:
+- Add backend Python project and lockfile.
+- Add frontend Vite React TypeScript project and lockfile.
+- Add Docker Compose for PostgreSQL and Redis; add local object storage emulator only if needed.
+- Add `/health/live` and `/health/ready` API endpoints.
+- Add a basic frontend page and backend API connection.
+- Add configuration validation on application startup.
+Tests/verification:
+- Frontend starts and builds.
+- API starts and health endpoints work.
+- PostgreSQL migration can run.
+- Redis connection works.
+- `docker compose up` starts the local dependencies.
+README update:
+- Exact Windows PowerShell and macOS/Linux setup commands.
+- Docker commands, ports, health endpoints, environment variables.
+Commit:
+`chore: add local development stack and health checks`
+
+PHASE 2 - DATABASE, MIGRATIONS, AND CORE ARCHITECTURE
+Tasks:
+- Implement SQLAlchemy models for users, media_assets, analysis_jobs, analysis_results, frame_results, model_versions, datasets, training_runs, and audit_logs.
+- Add Alembic initial migration.
+- Add repository/service layers; keep route handlers thin.
+- Add seed script for a local admin account using environment-provided credentials; never hardcode a production admin password.
+- Add common error responses and request IDs.
+Tests/verification:
+- Migrations apply from an empty database.
+- Unique email and foreign-key constraints work.
+- Tests use a temporary/test database.
+README update:
+- Database setup, migration commands, initial entity diagram.
+Commit:
+`feat: add core database schema and migrations`
+
+PHASE 3 - AUTHENTICATION AND RBAC
+Tasks:
+- Registration, email verification abstraction, login, logout, refresh, forgot/reset password.
+- Password hashing.
+- Access/refresh token or secure session implementation.
+- Roles: USER and ADMIN; optional RESEARCHER later.
+- User approval status and admin approval endpoint.
+- Backend authorization dependency/middleware.
+- Rate limit auth endpoints.
+- Add frontend login/register/reset/profile screens.
+Tests/verification:
+- Unauthenticated users cannot access protected routes.
+- USER cannot access ADMIN endpoints.
+- User A cannot access User B's data.
+- Suspended/pending users are handled correctly.
+README update:
+- Auth flow, role matrix, email provider setup, security settings.
+Commit:
+`feat: implement authentication and role-based access control`
+
+PHASE 4 - SECURE MEDIA UPLOAD
+Tasks:
+- Build upload interface with supported formats and size/duration limits.
+- Implement backend allowlist and file-signature validation.
+- Generate UUID storage keys.
+- Compute SHA-256.
+- Store files privately through a storage abstraction (local in development; object storage in deployment).
+- Extract metadata using safe media tools.
+- Record ownership and retention fields in PostgreSQL.
+- Add deletion workflow.
+Tests/verification:
+- Valid sample image/video accepted.
+- Wrong extension, wrong signature, oversized, malformed, and unsupported files rejected.
+- Attempted path traversal does not escape storage directory.
+- User cannot download another user's file.
+README update:
+- Upload formats, configurable limits, storage configuration, deletion policy.
+Commit:
+`feat: add secure media upload and private storage`
+
+PHASE 5 - BACKGROUND QUEUE AND JOB LIFECYCLE
+Tasks:
+- Choose RQ or Celery and implement one queue.
+- Add worker service.
+- Implement job states: QUEUED, PROCESSING, COMPLETED, FAILED, CANCELLED.
+- Add progress events/polling.
+- Add retry rules, timeout, cleanup, and idempotency protections.
+- API creates a job and returns 202 + job ID.
+- Frontend displays true job state and progress.
+Tests/verification:
+- Job transitions are valid.
+- Worker failure marks the job failed with a safe error.
+- Duplicate delivery does not create duplicate results.
+- Queue can recover after worker restart.
+README update:
+- Worker startup commands, queue settings, job lifecycle diagram.
+Commit:
+`feat: implement asynchronous analysis jobs and worker queue`
+
+PHASE 6 - MEDIA PREPROCESSING PIPELINE
+Tasks:
+- Build safe FFprobe metadata inspection.
+- Build FFmpeg frame extraction with strict resource limits.
+- Add configurable sampling policy (start with 16 evenly distributed frames; make it configurable).
+- Add face detection and face crop/alignment.
+- Track valid frame count and quality status.
+- Add temporary-file cleanup and a no-face/unsupported result state.
+- Keep all preprocess transforms versioned.
+Tests/verification:
+- Deterministic output count for known test videos.
+- No-face clip returns a controlled INCONCLUSIVE state.
+- Malformed/long/large video is rejected or times out safely.
+- Temporary frames are removed after success and failure.
+README update:
+- FFmpeg installation/version, preprocessing steps, supported codecs, resource limits.
+Commit:
+`feat: add safe video decoding and face preprocessing`
+
+PHASE 7 - BASELINE IMAGE DETECTOR AND MODEL INTERFACE
+Tasks:
+- Implement a common `Detector` interface.
+- Implement the selected baseline (EfficientNet-B0 or Xception after feasibility and licence check).
+- Add checkpoint configuration, model metadata, and checksum validation.
+- Implement image inference and standardized output schema.
+- Add explicit model-not-loaded and unsupported-input errors.
+- Add inference unit tests using a tiny permitted fixture or a mocked model.
+Tests/verification:
+- Model loads on CPU.
+- Same image produces deterministic output within expected tolerance.
+- Invalid checkpoint checksum fails closed.
+- API/worker returns model ID/version with result.
+README update:
+- Baseline model, checkpoint acquisition/training status, intended task, limitations.
+Commit:
+`feat: add baseline image deepfake detector`
+
+PHASE 8 - VIDEO INFERENCE AND RESULT AGGREGATION
+Tasks:
+- Run baseline detector on valid sampled face crops.
+- Compare mean, median, and top-k aggregation on validation data.
+- Choose and version an aggregation method.
+- Persist timestamped frame results and summary result.
+- Add inconclusive states for too few valid frames or poor quality.
+- Add video analysis endpoint and result response.
+Tests/verification:
+- Correct association between timestamp and frame result.
+- Video score uses only valid frames.
+- Empty face-frame list never becomes a confident authentic prediction.
+- User sees video result and timestamp timeline.
+README update:
+- Sampling/aggregation method, thresholds, supported video limits.
+Commit:
+`feat: add video-level deepfake analysis and frame timeline`
+
+PHASE 9 - USER DASHBOARD, HISTORY, AND REPORTS
+Tasks:
+- Build authenticated user dashboard.
+- Add analysis list with pagination, filters, and status.
+- Build result page with class, estimated score, model version, media summary, frame timeline, and limitations.
+- Add JSON export.
+- Add PDF report generation after stable result schema.
+- Add analysis deletion.
+Tests/verification:
+- User history is ownership-filtered.
+- Report content matches stored result.
+- Deleted analysis/media is no longer retrievable by the user.
+README update:
+- Screenshots, user workflow, result interpretation, report format.
+Commit:
+`feat: add user dashboard history and downloadable reports`
+
+PHASE 10 - ADMIN DASHBOARD AND USER MANAGEMENT
+Tasks:
+- Admin overview with user, analysis, queue, and outcome statistics.
+- User list, search, approve, suspend, reactivate.
+- Add admin-only audit log view.
+- Add exports for aggregate predictions.
+- Add date range and dataset/model filters where available.
+- Add health/worker status panel.
+Tests/verification:
+- USER role cannot access admin data.
+- Admin action is audited.
+- Aggregated counts match source rows for test fixtures.
+README update:
+- Admin features, role matrix, dashboard screenshots.
+Commit:
+`feat: add admin dashboard and user authorization tools`
+
+PHASE 11 - DATASET REGISTRY AND MODEL TRAINING/EVALUATION
+Tasks:
+- Add dataset metadata registration and manifest validation.
+- Create offline preprocessing scripts for approved datasets.
+- Add training configuration files.
+- Train baseline using an authorized dataset.
+- Add evaluation scripts for held-out and cross-dataset testing.
+- Produce metrics, charts, model card, and checkpoint checksum.
+- Add admin job monitoring.
+- Add explicit confirmation/approval before registering a production-ready model.
+Tests/verification:
+- Split manifest has no source-video leakage.
+- Training run records code SHA, dataset version, seed, and config.
+- Test metrics are generated by one reproducible command.
+- No raw dataset is added to Git.
+README update:
+- Exact authorized dataset setup; no private download tokens.
+- Reproduce preprocessing/training/evaluation commands.
+- Current measured metrics and known limitations.
+Commit:
+`feat: add dataset registry and reproducible model evaluation`
+
+PHASE 12 - MODEL REGISTRY, ACTIVATION, AND ROLLBACK
+Tasks:
+- Add model-version registry.
+- Add staged/active/retired states.
+- Add model activation authorization.
+- Ensure new jobs use the active version and existing jobs retain their assigned version.
+- Add rollback to previous active model.
+- Verify checkpoint checksum during load.
+Tests/verification:
+- Only evaluated/staged model can be activated.
+- Activation is audited.
+- Rollback restores prior model.
+- Existing report keeps original model version.
+README update:
+- Model promotion/rollback workflow and model-card links.
+Commit:
+`feat: add model registry activation and rollback`
+
+PHASE 13 - PROVENANCE AND OPTIONAL INTEGRITY EXTENSION
+Tasks:
+- Add a separate C2PA validation service using a maintained SDK compatible with the current specification.
+- Store status and validation details separately from the ML prediction.
+- Display found/not found/invalid/unsupported states.
+- Keep SHA-256 hash and immutable audit metadata.
+- Optional: design a test-only hash anchoring proof; do not place personal media or sensitive data on-chain.
+Tests/verification:
+- Missing credentials do not change the ML score.
+- Invalid credentials are not presented as valid.
+- Valid provenance is not described as proof of truth.
+- Hash changes are detected.
+README update:
+- Explain provenance vs detector output; document any ledger experiment and privacy consequences.
+Commit:
+`feat: add separate media provenance and integrity checks`
+
+PHASE 14 - SECURITY HARDENING, OBSERVABILITY, AND CI
+Tasks:
+- Add security headers, CORS allowlist, rate limiting, and request validation.
+- Add structured logs, request/job IDs, worker heartbeat, metrics.
+- Add dependency and secret scanning.
+- Add unit, API integration, frontend, and end-to-end tests.
+- Add GitHub Actions for lint, type checks, tests, and builds.
+- Add backup and restore runbook.
+- Review file parser/worker isolation and resource limits.
+Tests/verification:
+- CI passes from a clean checkout.
+- No secrets are present in repository history.
+- Security tests cover IDOR, role bypass, upload abuse, and malformed media.
+README update:
+- CI badges, test commands, security controls, operational runbook.
+Commit:
+`test: harden security and add automated quality gates`
+
+PHASE 15 - CONTAINERIZATION AND DEPLOYMENT
+Tasks:
+- Create production Docker images for API and worker.
+- Configure production PostgreSQL, Redis, private object storage, and environment secrets.
+- Deploy frontend and API separately if required by the hosting provider.
+- Deploy worker as a persistent background service.
+- Configure HTTPS, CORS, storage lifecycle, backups, and monitoring.
+- Run database migrations as a controlled release step.
+- Verify health/readiness endpoints.
+- Add smoke tests on the deployed environment.
+Tests/verification:
+- Fresh production deployment can start without manual database edits.
+- Upload, queue, inference, result, history, and delete all work end-to-end.
+- Worker restarts do not lose queued jobs.
+- No production secret or media object is public.
+README update:
+- Live URL, architecture, deployment setup, environment variables, release procedure, monitoring, limitations.
+Commit:
+`chore: deploy MINO production services and document operations`
+
+PHASE 16 - OPTIONAL ADVANCED RESEARCH EXTENSIONS
+
+Do not start until the core product is stable.
+
+Possible additions:
+- Temporal model (FTCN/TALL/I3D/VideoMAE or another justified implementation).
+- Frequency-domain analysis branch.
+- General synthetic-image detector as a separate model/task.
+- Audio deepfake detector.
+- Audio-video synchronization branch.
+- Multiple-face tracking and per-face results without identity recognition.
+- Browser-based real-time camera stream analysis (requires a separate performance/safety review).
+- Researcher workspace and experiment comparison.
+- Optional integrity anchoring/ledger integration.
+
+For each extension, create a research issue, cite the target paper/repository, check licensing, create a separate experiment, add evaluation, and only then add a product feature.
+Commit example:
+`feat: add [specific validated extension]`
+
+======================================================================
+14. README.md - REQUIRED CONTENT AND UPDATE POLICY
+======================================================================
+
+The README is a living project record. Update it after every implementation phase. A README update is not optional and must be included in the same commit as the phase's code changes.
+
+Required README outline:
+
+# MINO - Deepfake Detection and Media Forensics Platform
+
+## 1. Overview
+- What MINO does.
+- Intended users.
+- Supported media/tasks today.
+- Important limitations: probabilistic screening, not proof.
+
+## 2. Features
+- Separate completed, in-progress, and planned feature lists.
+- Never mark an unimplemented feature as completed.
+
+## 3. Architecture
+- Mermaid architecture diagram.
+- Frontend/API/worker/database/Redis/private storage/model flow.
+- Role diagram: Remote User and Admin/Service Provider.
+
+## 4. Technology Stack
+- Frameworks, libraries, database, queue, media tools, model runtime.
+- Link to relevant docs.
+
+## 5. Repository Structure
+- Explain important folders only.
+
+## 6. Prerequisites
+- Python version supported by dependency lock.
+- Node.js version supported by frontend lock.
+- Docker Desktop / Docker Engine.
+- FFmpeg and FFprobe.
+- Git.
+- Optional CUDA/GPU requirements if a chosen model needs them.
+
+## 7. Local Setup
+- Clone command.
+- Copy `.env.example` to `.env`.
+- Start PostgreSQL/Redis with Docker Compose.
+- Install backend dependencies.
+- Run migrations.
+- Start API.
+- Start worker.
+- Install/start frontend.
+- Include Windows PowerShell commands and macOS/Linux commands.
+
+## 8. Environment Variables
+- Document every variable and safe example value.
+- Never include actual secrets.
+
+## 9. Run Commands
+- Development.
+- Tests.
+- Lint/format/type-check.
+- Migrations.
+- Training/evaluation scripts.
+- Docker build/run.
+
+## 10. API Documentation
+- Local OpenAPI URL.
+- Authentication requirements.
+- Key endpoints.
+
+## 11. Database and Migrations
+- Entity summary.
+- Migration/rollback procedure.
+
+## 12. ML Pipeline
+- Dataset manifest format.
+- Preprocessing, face detection, frame sampling, inference, aggregation.
+- Active model and model version.
+- Reproduction commands.
+
+## 13. Datasets and Licenses
+- Dataset references and access status.
+- Terms and access restrictions.
+- Explicit statement that dataset files are not stored in Git.
+
+## 14. Evaluation Results
+- Table with model version, datasets, split, sample count, AUC, AP, F1, balanced accuracy, EER, false-positive rate, latency.
+- Include date and commit SHA.
+- Do not publish a metric without a reproducible source report.
+
+## 15. User Guide
+- Register/login.
+- Upload media.
+- Track job.
+- Read result.
+- Download report/delete media.
+
+## 16. Admin Guide
+- Approve users.
+- Register datasets.
+- Start training/evaluation.
+- Compare and activate models.
+- Roll back a model.
+
+## 17. Security and Privacy
+- Upload safety.
+- Authentication/RBAC.
+- Retention and deletion.
+- Private storage.
+- Known security assumptions.
+
+## 18. Deployment
+- Hosting architecture.
+- Secrets and storage configuration.
+- Database migration/release steps.
+- Monitoring and backup/restore.
+
+## 19. Limitations and Responsible Use
+- Domain limitations.
+- False positives/negatives.
+- No universal detector guarantee.
+- C2PA is provenance, not a truth detector.
+- No legal/identity conclusion.
+
+## 20. Roadmap
+- Completed/in-progress/planned.
+
+## 21. Research References
+- Source paper and modern benchmark/dataset/security references.
+
+README update checklist for every phase:
+[ ] Feature list/status updated.
+[ ] Setup commands still work.
+[ ] New environment variables documented.
+[ ] New API endpoints documented.
+[ ] Tests/verification commands documented.
+[ ] Screenshot or GIF added only when useful and privacy-safe.
+[ ] Limitations updated if model behavior changes.
+[ ] Roadmap checkboxes reflect real status.
+
+======================================================================
+15. GIT AND COMMIT DISCIPLINE - MANDATORY
+======================================================================
+
+15.1 Branch strategy
+- `main`: always buildable and demonstrable.
+- `develop`: optional integration branch if multiple contributors are working.
+- Feature branches: `feature/auth-rbac`, `feature/media-upload`, `feature/video-inference`, `feature/admin-dashboard`.
+- Bug fixes: `fix/<short-description>`.
+- Research experiments: `experiment/<model-or-dataset>`.
+
+For a solo developer, short-lived feature branches are still recommended. Do not keep unfinished experimental code in main.
+
+15.2 Commit naming
+Use Conventional Commits:
+- `feat:` new user-visible feature.
+- `fix:` bug fix.
+- `docs:` documentation-only update.
+- `test:` tests.
+- `refactor:` internal restructuring without behavior change.
+- `chore:` tooling/configuration/maintenance.
+- `perf:` performance improvement.
+- `security:` security hardening.
+
+Examples:
+- `feat: add user registration and login`
+- `feat: create asynchronous video analysis worker`
+- `fix: prevent users from reading another user's report`
+- `test: add upload signature validation cases`
+- `docs: document dataset access and evaluation protocol`
+
+15.3 Rules before every commit
+1. Run `git status` and inspect every changed file.
+2. Never commit `.env`, secrets, access tokens, private datasets, user uploads, generated face crops, checkpoints, or logs.
+3. Run relevant tests and builds.
+4. Update README and relevant docs.
+5. Stage specific files; avoid blindly adding large data folders.
+6. Commit one logical unit.
+7. Confirm commit and working tree status.
+
+15.4 Example commands
+
+`git checkout -b feature/media-upload`
+`git status`
+`git add apps/api apps/web docs README.md CHANGELOG.md`
+`git diff --cached --stat`
+`git commit -m "feat: add secure media upload and private storage"`
+`git status`
+
+15.5 Commit checkpoints
+
+Use at least the following checkpoints (one commit for each completed phase):
+1. `chore: initialize MINO monorepo and project documentation`
+2. `chore: add local development stack and health checks`
+3. `feat: add core database schema and migrations`
+4. `feat: implement authentication and role-based access control`
+5. `feat: add secure media upload and private storage`
+6. `feat: implement asynchronous analysis jobs and worker queue`
+7. `feat: add safe video decoding and face preprocessing`
+8. `feat: add baseline image deepfake detector`
+9. `feat: add video-level deepfake analysis and frame timeline`
+10. `feat: add user dashboard history and downloadable reports`
+11. `feat: add admin dashboard and user authorization tools`
+12. `feat: add dataset registry and reproducible model evaluation`
+13. `feat: add model registry activation and rollback`
+14. `feat: add separate media provenance and integrity checks`
+15. `test: harden security and add automated quality gates`
+16. `chore: deploy MINO production services and document operations`
+
+Do not squash away the meaningful development history before project review. Use Git tags for demonstrable milestones, e.g. `v0.1.0-foundation`, `v0.2.0-auth-upload`, `v0.5.0-video-analysis`, `v1.0.0` only when the release criteria are actually met.
+
+======================================================================
+16. ENVIRONMENT CONFIGURATION TEMPLATE
+======================================================================
+
+Create `.env.example` with safe placeholders only. Adjust names to the final implementation.
+
+APP_ENV=development
+APP_NAME=MINO
+API_V1_PREFIX=/api/v1
+FRONTEND_ORIGIN=http://localhost:5173
+
+DATABASE_URL=postgresql+psycopg://mino:mino_dev_only@localhost:5432/mino
+REDIS_URL=redis://localhost:6379/0
+
+JWT_SECRET=replace-with-long-random-development-secret
+ACCESS_TOKEN_MINUTES=15
+REFRESH_TOKEN_DAYS=7
+
+STORAGE_BACKEND=local
+LOCAL_STORAGE_ROOT=./.local-storage
+S3_ENDPOINT_URL=
+S3_BUCKET=
+S3_REGION=
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
+
+MAX_UPLOAD_BYTES=104857600
+MAX_VIDEO_DURATION_SECONDS=120
+MAX_VIDEO_WIDTH=1920
+MAX_VIDEO_HEIGHT=1080
+VIDEO_FRAME_SAMPLE_COUNT=16
+WORKER_CONCURRENCY=1
+JOB_TIMEOUT_SECONDS=900
+
+MODEL_TASK=face_deepfake_video
+MODEL_VERSION=baseline-0.1.0
+MODEL_CHECKPOINT_PATH=./ml/checkpoints/baseline.pt
+MODEL_DEVICE=cpu
+
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+EMAIL_FROM=
+
+C2PA_VALIDATION_ENABLED=false
+SENTRY_DSN=
+
+Configuration rules:
+- Never use the placeholder secret in production.
+- Validate required values at startup.
+- Keep separate development, test, and production environment configurations.
+- Do not expose backend secrets through frontend `VITE_` variables.
+- Add any new variable to `.env.example` and README in the same commit.
+
+======================================================================
+17. TESTING STRATEGY AND DEFINITION OF DONE
+======================================================================
+
+17.1 Backend tests
+- Unit tests for validation, security, services, model output parsing, aggregation, and storage.
+- API tests for registration/login, RBAC, file upload, job creation, result retrieval, history, deletion, admin access, exports.
+- Ownership/IDOR tests for every user-owned resource.
+- Worker tests for success, timeout, duplicate delivery, retry, failure, and cleanup.
+
+17.2 ML tests
+- Preprocessing reproducibility.
+- Correct label mapping.
+- No data leakage across splits.
+- Model load and inference smoke test.
+- Aggregation behavior tests.
+- Model checkpoint checksum validation.
+- Evaluation report completeness.
+- Regression test for known permitted sample fixtures.
+
+17.3 Frontend tests
+- Component and form tests.
+- Auth route guard tests.
+- Upload error/progress tests.
+- Job-state rendering tests.
+- Result/history rendering tests.
+- Admin authorization UI tests (backend remains source of truth).
+
+17.4 End-to-end tests
+- Register -> verify -> login -> upload -> queue -> worker -> result -> history -> report -> delete.
+- Admin login -> approve user -> register dataset -> view evaluation -> stage/activate model.
+- Unauthorized user cannot retrieve another user's media or reports.
+
+17.5 Definition of Done for MVP
+
+MINO MVP is complete only when all of these are true:
+[ ] User registration/login works.
+[ ] Admin role and approval workflow work.
+[ ] Image upload is secure and private.
+[ ] Video upload is secure and private.
+[ ] Asynchronous job queue works.
+[ ] FFmpeg/FFprobe preprocessing works with documented limits.
+[ ] A baseline model can produce image/video scores.
+[ ] Video result contains timestamped frame-level analysis.
+[ ] Uncertain/no-face/unsupported cases are handled without false certainty.
+[ ] User history and profile work.
+[ ] Admin can manage users and see analytics.
+[ ] Dataset and model versions are tracked.
+[ ] Evaluation is reproducible and includes cross-dataset testing.
+[ ] Reports identify model version and limitations.
+[ ] Upload security and ownership tests pass.
+[ ] CI passes from a clean clone.
+[ ] README and docs are current.
+[ ] Deployment smoke test passes.
+
+======================================================================
+18. PERFORMANCE TARGETS - MEASURE, DO NOT INVENT
+======================================================================
+
+Set initial operational targets after measuring the selected model and host. Do not publish fabricated benchmark numbers.
+
+Measure:
+- Upload throughput and maximum supported file size.
+- Queue wait time.
+- Video decode time.
+- Face detection time.
+- Model inference time per frame.
+- Total analysis time by video duration and number of faces.
+- Peak RAM and CPU usage.
+- Worker concurrency before timeouts or memory pressure.
+- API p50/p95 latency excluding asynchronous inference.
+- Storage growth and retention deletion time.
+
+Initial safe defaults for a student/demo deployment may be 100 MB maximum upload, 120 seconds maximum video duration, 1080p maximum decoded dimensions, 16 sampled frames, and one CPU worker process. Treat these as configurable starting limits, not universal performance claims. Adjust only after load testing and security review.
+
+======================================================================
+19. RISKS AND MITIGATIONS
+======================================================================
+
+Risk: High in-dataset score but poor real-world detection.
+Mitigation: source/identity-disjoint splits, cross-dataset tests, DF40/modern manipulation evaluation, model card, conservative labels.
+
+Risk: User assumes result is proof.
+Mitigation: clear probability language, uncertainty state, limitations, and report disclaimer.
+
+Risk: Malicious media file attacks the decoder.
+Mitigation: allowlists, signatures, isolated worker, FFmpeg timeouts, resource limits, patched dependencies, private storage.
+
+Risk: Dataset licence or consent violation.
+Mitigation: terms review, dataset register, no redistribution, no repository upload, documented retention.
+
+Risk: GPU/hosting cost or free-tier limitations.
+Mitigation: CPU-capable fallback, asynchronous queue, configurable sampling, measured limits, local Docker development, separate training environment.
+
+Risk: Model upgrade silently changes old results.
+Mitigation: pin model version per job/result, store checkpoint checksum, immutable report metadata, rollback.
+
+Risk: C2PA confusion.
+Mitigation: separate provenance panel and ML result; missing credentials do not equal fake; valid provenance does not equal truth.
+
+Risk: Blockchain adds complexity and leaks data.
+Mitigation: make it optional, anchor hashes only, never upload media/personal data, do not depend on it for inference.
+
+Risk: Inference queue overload.
+Mitigation: maximum file length/size, worker concurrency cap, per-user rate limit, queue monitoring, quotas.
+
+======================================================================
+20. DELIVERABLES EXPECTED FROM THE CODING AGENT / DEVELOPMENT TEAM
+======================================================================
+
+At the end of each phase, return:
+1. Files created/modified.
+2. Features implemented.
+3. Exact commands to run locally.
+4. Tests executed and their actual results.
+5. Known bugs/limitations.
+6. README/docs changes.
+7. Git commit hash and commit message.
+8. Next phase recommendation.
+
+At final handover, provide:
+- Complete source code.
+- `.env.example` only; never secrets.
+- Docker Compose and production deployment instructions.
+- Database migrations.
+- API documentation.
+- User/admin guide.
+- Model card and evaluation reports.
+- Dataset manifest and licence references (not private raw datasets).
+- Test results and CI status.
+- README with screenshots and live/demo URL if actually deployed.
+- Known limitations and operational runbook.
+
+======================================================================
+21. RESEARCH REFERENCES AND VERIFIED STARTING POINTS
+======================================================================
+
+SOURCE PAPER
+1. B. Haritha Lakshmi, Vaidya Rishika, Sankepalli Sri Chandana, Nallamothu Bhavya Sree, "Deepfake Detection: A Systematic Literature Review," International Journal of Engineering, Science and Advanced Technology, Vol. 24, Issue 10, October 2024. Supplied PDF. Its survey covers 112 studies from 2018-2020. The system architecture and modules appear in the supplied PDF around pages 4-7.
+
+MODERN BENCHMARKS AND METHODS
+2. DeepfakeBench (NeurIPS 2023 Datasets and Benchmarks):
+   https://github.com/SCLBD/DeepfakeBench
+   https://proceedings.neurips.cc/paper_files/paper/2023/file/0e735e4b4f07de483cbe250130992726-Paper-Datasets_and_Benchmarks.pdf
+   Repository includes a unified evaluation framework and currently lists 36 detector methods and multiple evaluation metrics.
+
+3. DF40: Toward Next-Generation Deepfake Detection (NeurIPS 2024 Datasets and Benchmarks):
+   https://proceedings.neurips.cc/paper_files/paper/2024/hash/34239f60eca7ce9bee5280aaf81362d8-Abstract-Datasets_and_Benchmarks_Track.html
+   Focuses on 40 distinct manipulation techniques and shortcomings in diversity/generalization/evaluation.
+
+DATASETS
+4. FaceForensics++ official repository:
+   https://github.com/ondyari/FaceForensics
+   Access is controlled; follow the official access form and dataset terms.
+
+5. Celeb-DF, CVPR 2020:
+   https://openaccess.thecvf.com/content_CVPR_2020/papers/Li_Celeb-DF_A_Large-Scale_Challenging_Dataset_for_DeepFake_Forensics_CVPR_2020_paper.pdf
+
+6. Deepfake Detection Challenge Dataset (Meta):
+   https://ai.meta.com/datasets/dfdc/
+   Official page describes preview/full datasets and AWS access prerequisites; it also illustrates public-vs-black-box generalization issues.
+
+7. DeeperForensics-1.0 (CVPR 2020):
+   https://openaccess.thecvf.com/content_CVPR_2020/html/Jiang_DeeperForensics-1.0_A_Large-Scale_Dataset_for_Real-World_Face_Forgery_Detection_CVPR_2020_paper.html
+   Dataset information:
+   https://github.com/189569400/DeeperForensics-1.0
+
+8. WildDeepfake dataset:
+   https://github.com/xingjunm/wild-deepfake
+   Maintainers describe restricted research use and applicant verification requirements.
+
+PROVENANCE AND SECURITY
+9. C2PA Technical Specification 2.5:
+   https://spec.c2pa.org/specifications/specifications/2.5/specs/C2PA_Specification.html
+   Current specification version observed during research: 2.5, dated October 2026. It describes signed provenance assertions and explicitly does not judge whether provenance is "good" or "bad" or whether depicted content is true.
+
+10. OWASP File Upload Cheat Sheet:
+    https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    Use for allowlisted extensions, content type/signature checks, randomized server-side filenames, size limits, and defense-in-depth upload controls.
+
+RESEARCH INTERPRETATION
+- The original paper supplies the project's functional baseline and historical taxonomy.
+- DeepfakeBench supplies a current benchmark/codebase reference; it is not necessary to deploy every supported detector.
+- DF40 and DFDC support the need for out-of-distribution evaluation.
+- Dataset access and licenses are controlled; inspect the authoritative terms before using each dataset.
+- C2PA adds provenance context, not an ML authenticity verdict.
+- OWASP guidance informs secure media ingestion; a media file must be treated as untrusted input.
+
+======================================================================
+22. FINAL MASTER INSTRUCTION FOR THE IMPLEMENTING AI AGENT
+======================================================================
+
+You are implementing MINO, a complete deepfake detection and media-forensics web platform. Use this document as the source of truth for project scope and engineering direction.
+
+MANDATORY RULES:
+1. Read this entire specification before modifying the repository.
+2. Inspect the existing repository and preserve any working code; do not overwrite a project blindly.
+3. Build the project phase by phase in the order defined above.
+4. Preserve the uploaded paper's Service Provider/Admin and Remote User capabilities.
+5. Implement the system with a React + TypeScript frontend, FastAPI backend, PostgreSQL, Redis-backed worker queue, Python ML pipeline, and private media storage unless a documented technical blocker requires a change.
+6. Keep the detector modular and versioned. Start with one measurable baseline; do not add many unverified models to appear feature-rich.
+7. Build a genuine asynchronous video-analysis workflow. Do not fake progress or return hard-coded predictions.
+8. Do not fabricate model weights, results, accuracy, dataset access, test outcomes, or deployment status.
+9. Never store secrets, research datasets, uploaded media, face crops, or private model checkpoints in Git.
+10. Check dataset, repository, model, and pretrained-weight licences before use.
+11. Use source-video/identity-aware data splits and cross-dataset evaluation. Report AUC, AP, F1, balanced accuracy, confusion matrix, false-positive/false-negative rates, frame-level and video-level metrics, sample counts, and dataset names.
+12. Use calibrated/validated thresholds and an INCONCLUSIVE state. Never describe the score as proof.
+13. Keep C2PA provenance separate from the ML result. Do not treat missing provenance as fake or valid provenance as proof of truth.
+14. Implement upload validation, private storage, ownership checks, RBAC, rate limits, worker isolation, timeouts, cleanup, retention, and deletion.
+15. Update README.md, CHANGELOG.md, and relevant docs after EVERY phase.
+16. Run tests and builds before each commit. Make one logical commit for each completed phase using Conventional Commits.
+17. After each phase, report changed files, features, exact run commands, actual test results, known limitations, README updates, and commit hash.
+18. If a phase cannot be completed, report the blocker and leave the repository in a working state. Do not silently skip it or pretend it is done.
+19. Do not start advanced audio, temporal-transformer, blockchain, or live-stream features until the image/video MVP and evaluation are stable.
+20. At the end, verify the complete user flow and admin flow from a clean clone and provide the final handover listed in Section 20.
+
+START NOW WITH PHASE 0. IMPLEMENT ONLY THE FIRST PHASE, VERIFY IT, UPDATE THE README, AND COMMIT IT. THEN CONTINUE TO THE NEXT PHASE WITHOUT SKIPPING TESTS OR DOCUMENTATION.
+
+END OF MASTER IMPLEMENTATION PLAN
