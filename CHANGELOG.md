@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 2: Database, Migrations, and Core Architecture**
+  - Complete SQLAlchemy 2.0 entities matching master specification: `users`, `media_assets`, `analysis_jobs`, `analysis_results`, `frame_results`, `model_versions`, `datasets`, `training_runs`, `audit_logs`.
+  - Alembic migration environment initialized with automatic version generation and applied schema.
+  - Safe native bcrypt password hashing module.
+  - Database seed script (`scripts/seed_db.py`) creating default superuser and default active baseline model version.
+  - Unit test verifying database connectivity and seeded data.
+  - `docs/DATABASE.md` documenting schema and migration procedures.
 - **Phase 1: Development Environment and Containers**
   - FastAPI application structure with `/health/live` and `/health/ready` endpoints.
   - Pydantic v2 settings management with `.env` reading and type validation.
