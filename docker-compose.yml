@@ -1,4 +1,38 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+    container_name: mino_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://mino_user:mino_password_secure@postgres:5432/mino_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=production-secret-key-32-bytes-secure-hash-mino
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - media_storage:/app/data/storage
+      - media_uploads:/app/data/uploads
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.web
+    container_name: mino_web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
   postgres:
     image: postgres:16-alpine
     container_name: mino_postgres
@@ -34,3 +68,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  media_storage:
+  media_uploads:
